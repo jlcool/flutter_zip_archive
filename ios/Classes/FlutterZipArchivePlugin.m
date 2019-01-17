@@ -24,10 +24,13 @@
     NSString *dest =call.arguments[@"dest"];
     NSString *password =call.arguments[@"password"];
     NSDictionary *m1 =nil;
-    NSArray<NSString *> *array=[[NSArray alloc] initWithObjects:src,nil];
-    BOOL success =[SSZipArchive createZipFileAtPath:dest
-                    withFilesAtPaths:array
-                             withPassword:password.length > 0 ? password : nil];
+    BOOL success = [SSZipArchive createZipFileAtPath:dest
+                             withContentsOfDirectory:src
+                                 keepParentDirectory:NO
+                                    compressionLevel:-1
+                                            password:password.length > 0 ? password : nil
+                                                 AES:NO
+                                     progressHandler:nil];
     if(success){
         m1= @{
               @"result":  @"success",
