@@ -1,5 +1,7 @@
 package com.jlcool.flutterziparchive;
 
+import android.os.AsyncTask;
+
 import net.lingala.zip4j.core.ZipFile;
 import net.lingala.zip4j.exception.ZipException;
 import net.lingala.zip4j.model.FileHeader;
@@ -37,31 +39,75 @@ public class FlutterZipArchivePlugin implements MethodCallHandler {
     public void onMethodCall(MethodCall call, Result result) {
         switch (call.method) {
             case "zip":
-                zip(call, result);
+                new ZipTask(call, result).execute();
                 break;
             case "unzip":
-                unzip(call, result);
+                new UnZipTask(call, result).execute();
                 break;
             default:
                 result.notImplemented();
                 break;
         }
     }
-    public void zip(MethodCall call, Result result) {
+
+    private class ZipTask extends AsyncTask<Void, Void, Map<String, Object>> {
+        private MethodCall call;
+        private Result result;
+
+        public ZipTask(MethodCall call, Result result) {
+            this.call = call;
+            this.result = result;
+        }
+
+        @Override
+        protected Map<String, Object> doInBackground(Void... params) {
+            return zip(call, result);
+        }
+
+        @Override
+        protected void onPostExecute(Map<String, Object> data) {
+            super.onPostExecute(data);
+            this.result.success(data);
+        }
+    }
+
+    public Map<String, Object> zip(MethodCall call, Result result) {
         String src = call.argument("src");
         String dest = call.argument("dest");
         String passwd = call.argument("password");
         Map<String, Object> m1 = new HashMap();
-      String path=  zip(src,dest,passwd);
-      if(path==null){
-          m1.put("result", "fail");
-      }else{
-          m1.put("result", "success");
-          m1.put("path", path);
-      }
-        result.success(m1);
+        String path = zip(src, dest, passwd);
+        if (path == null) {
+            m1.put("result", "fail");
+        } else {
+            m1.put("result", "success");
+            m1.put("path", path);
+        }
+        return m1;
     }
-    public void unzip(MethodCall call, Result result) {
+
+    private class UnZipTask extends AsyncTask<Void, Void, Map<String, Object>> {
+        private MethodCall call;
+        private Result result;
+
+        public UnZipTask(MethodCall call, Result result) {
+            this.call = call;
+            this.result = result;
+        }
+
+        @Override
+        protected Map<String, Object> doInBackground(Void... params) {
+            return unzip(call, result);
+        }
+
+        @Override
+        protected void onPostExecute(Map<String, Object> data) {
+            super.onPostExecute(data);
+            this.result.success(data);
+        }
+    }
+
+    public Map<String, Object> unzip(MethodCall call, Result result) {
         String zip = call.argument("zip");
         String dest = call.argument("dest");
         String passwd = call.argument("password");
@@ -73,11 +119,11 @@ public class FlutterZipArchivePlugin implements MethodCallHandler {
                 _paths[i] = _files[i].getName();
             }
             m1.put("result", "success");
-            m1.put("files", StringUtils.join( _paths, ","));
+            m1.put("files", StringUtils.join(_paths, ","));
         } catch (Exception ex) {
             m1.put("result", "fail");
         }
-        result.success(m1);
+        return m1;
     }
 
     /**
@@ -173,7 +219,7 @@ public class FlutterZipArchivePlugin implements MethodCallHandler {
     }
 
 
-    public String zip(String src, String dest,  String passwd) {
+    public String zip(String src, String dest, String passwd) {
 
 
         File srcFile = new File(src);
@@ -191,11 +237,11 @@ public class FlutterZipArchivePlugin implements MethodCallHandler {
             if (srcFile.isDirectory()) {
                 // 如果不创建目录的话,将直接把给定目录下的文件压缩到压缩文件,即没有目录结构
 
-                    File[] subFiles = srcFile.listFiles();
-                    ArrayList<File> temp = new ArrayList<File>();
-                    Collections.addAll(temp, subFiles);
-                    zipFile.addFiles(temp, parameters);
-                    return dest;
+                File[] subFiles = srcFile.listFiles();
+                ArrayList<File> temp = new ArrayList<File>();
+                Collections.addAll(temp, subFiles);
+                zipFile.addFiles(temp, parameters);
+                return dest;
 
 
             } else {
